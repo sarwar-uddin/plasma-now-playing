@@ -61,16 +61,101 @@ PlasmoidItem {
     toolTipMainText: hasPlayer && track ? track : i18n("Nothing playing")
     toolTipSubText: hasPlayer ? [artist, player.identity].filter(Boolean).join(" — ") : ""
 
+    // Panel view: mini album art + "track · artist". Left click opens the card,
+    // middle click toggles play/pause, wheel changes volume.
     compactRepresentation: MouseArea {
+        id: compact
+        readonly property bool vertical: Plasmoid.formFactor === PlasmaCore.Types.Vertical
+        readonly property bool showText: !vertical && root.hasPlayer && root.track.length > 0
+        hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         onClicked: mouse => {
             if (mouse.button === Qt.MiddleButton && root.hasPlayer) root.player.PlayPause()
             else root.expanded = !root.expanded
         }
-        Kirigami.Icon {
-            anchors.fill: parent
-            source: root.playing ? "media-playback-start" : (root.hasPlayer ? "media-playback-pause" : "media-playback-stop")
-            active: parent.containsMouse
+        onWheel: wheel => {
+            if (!root.hasPlayer) return
+            const step = Plasmoid.configuration.volumeStep / 100
+            const delta = wheel.angleDelta.y > 0 ? step : wheel.angleDelta.y < 0 ? -step : 0
+            if (delta !== 0) root.player.changeVolume(delta, true)
+        }
+
+        readonly property int maxText: Kirigami.Units.gridUnit * 14
+        Layout.minimumWidth: vertical ? -1 : miniRow.implicitWidth
+        Layout.preferredWidth: vertical ? -1 : miniRow.implicitWidth
+        Layout.maximumWidth: vertical ? Infinity : miniRow.implicitWidth
+
+        RowLayout {
+            id: miniRow
+            anchors.verticalCenter: parent.verticalCenter
+            anchors.horizontalCenter: compact.vertical ? parent.horizontalCenter : undefined
+            spacing: Kirigami.Units.smallSpacing
+
+            Rectangle {
+                id: thumb
+                readonly property int side: Math.max(16, (compact.vertical ? compact.width : compact.height) - 4)
+                Layout.preferredWidth: side
+                Layout.preferredHeight: side
+                radius: 2
+                color: "#0D0D0F"
+                border.color: root.playing ? Qt.rgba(224 / 255, 32 / 255, 63 / 255, 0.7) : "#2A2A2E"
+                border.width: 1
+                Image {
+                    id: miniCover
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    source: root.art
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                    sourceSize: Qt.size(64, 64)
+                    visible: status === Image.Ready
+                }
+                Kirigami.Icon {
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    visible: miniCover.status !== Image.Ready
+                    source: root.playing ? "media-playback-start" : (root.hasPlayer ? "media-playback-pause" : "media-playback-stop")
+                    active: compact.containsMouse
+                    opacity: root.hasPlayer ? 1 : 0.6
+                }
+                // paused overlay on top of real art
+                Rectangle {
+                    anchors.fill: parent
+                    visible: miniCover.visible && root.hasPlayer && !root.playing
+                    color: Qt.rgba(0, 0, 0, 0.5)
+                    radius: parent.radius
+                    Kirigami.Icon {
+                        anchors.centerIn: parent
+                        width: parent.width * 0.6; height: width
+                        source: "media-playback-pause"
+                    }
+                }
+            }
+
+            ColumnLayout {
+                visible: compact.showText
+                spacing: -2
+                Layout.maximumWidth: compact.maxText
+                PC3.Label {
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: compact.maxText
+                    text: root.track
+                    font.pixelSize: Math.max(9, Math.round(compact.height * 0.42))
+                    font.weight: Font.DemiBold
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
+                PC3.Label {
+                    Layout.fillWidth: true
+                    Layout.maximumWidth: compact.maxText
+                    visible: root.artist.length > 0
+                    text: root.artist
+                    color: root.dim
+                    font.pixelSize: Math.max(8, Math.round(compact.height * 0.34))
+                    elide: Text.ElideRight
+                    maximumLineCount: 1
+                }
+            }
         }
     }
 
