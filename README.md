@@ -5,7 +5,7 @@ A KDE Plasma 6 media widget. It shows album art over a blurred copy of the cover
 - Click the seek line to jump. Scroll anywhere on the card to change volume.
 - The controls are shuffle, previous, play/pause, next and repeat. Repeat cycles off → playlist → track; a small "1" badge marks repeat-one.
 - When several players are running, click the player chip in the top right to switch between them.
-- In a panel the widget shows an icon. Click it to open the card; middle-click to play or pause.
+- In a panel the widget shows a small album-art thumbnail (crimson border while playing, dimmed with a pause icon while paused) next to the track title and artist. Click it to open the card; middle-click to play or pause; scroll to change volume.
 
 Install with `kpackagetool6 -t Plasma/Applet -i package`. Upgrade with `kpackagetool6 -t Plasma/Applet -u package`.
 
