@@ -40,6 +40,7 @@ PlasmoidItem {
         localOnlyPlayers: Plasmoid.configuration.localOnlyPlayers
         ignoredPlayers: Plasmoid.configuration.ignoredPlayers
     }
+    readonly property var engine: scrobbler    // the pages have their own "scrobbler" property
     property int page: 0    // 0 = now, 1 = history, 2 = stats
 
     function scrobbleText() {
@@ -197,7 +198,7 @@ PlasmoidItem {
     fullRepresentation: Item {
         id: card
         Layout.minimumWidth: Kirigami.Units.gridUnit * 22
-        Layout.minimumHeight: Kirigami.Units.gridUnit * 8
+        Layout.minimumHeight: 214    // the Stats page needs this much
         Layout.preferredWidth: 620
         Layout.preferredHeight: 214
         clip: true
@@ -449,13 +450,13 @@ PlasmoidItem {
         }
 
         HistoryPage {
-            scrobbler: scrobbler
+            scrobbler: root.engine
             active: root.expanded && root.page === 1 || Plasmoid.formFactor === PlasmaCore.Types.Planar && root.page === 1
             crimson: root.crimson
             dim: root.dim
         }
         StatsPage {
-            scrobbler: scrobbler
+            scrobbler: root.engine
             active: root.expanded && root.page === 2 || Plasmoid.formFactor === PlasmaCore.Types.Planar && root.page === 2
             crimson: root.crimson
             dim: root.dim

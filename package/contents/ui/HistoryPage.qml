@@ -21,6 +21,7 @@ Item {
         for (const r of scrobbler.recent(60)) rows.append(r)
     }
     onActiveChanged: reload()
+    Component.onCompleted: reload()
     Connections {
         target: page.scrobbler
         function onRevisionChanged() { page.reload() }

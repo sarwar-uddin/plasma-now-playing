@@ -20,6 +20,7 @@ Item {
         chart.requestPaint()
     }
     onActiveChanged: reload()
+    Component.onCompleted: reload()
     Connections {
         target: page.scrobbler
         function onRevisionChanged() { page.reload() }

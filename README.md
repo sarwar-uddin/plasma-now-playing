@@ -21,6 +21,10 @@ Since 2.0 the widget also keeps track of what you listen to. A track counts as a
 - **In the panel** a thin crimson line along the bottom of the album thumbnail fills up as the track gets closer to counting, and stays solid once it has. The tooltip says how long is left.
 - **The card** has three tabs: *Now Playing*, *History* (recent listens, with a dot showing whether each one is on ListenBrainz, queued, or kept locally) and *Stats* (today, the last 7 days, your streak, a 14-day chart and the week's top artists).
 
+  ![History tab](screenshots/history.png)
+
+  ![Stats tab](screenshots/stats.png)
+
 The widget follows the player shown on the card, which is the one that's playing unless you picked another with the player chip.
 
 ## Tests
@@ -31,4 +35,4 @@ Install with `kpackagetool6 -t Plasma/Applet -i package`. Upgrade with `kpackage
 
 **Note:** the widget uses Plasma's *private* MPRIS QML module (`org.kde.plasma.private.mpris`), the same one the stock Media Player widget uses. A major Plasma release could change that API.
 
-Screenshot album art: *Cosmic Cliffs* in the Carina Nebula, NASA, ESA, CSA, STScI. The track metadata in the screenshots is made up.
+Screenshot album art: *Cosmic Cliffs* in the Carina Nebula, NASA, ESA, CSA, STScI. The track metadata and listen history in the screenshots are made up.
