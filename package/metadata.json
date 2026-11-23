@@ -2,11 +2,11 @@
   "KPlugin": {
     "Id": "com.github.sarwaruddin.nowplaying",
     "Name": "Now Playing",
-    "Description": "Media player card with album art, chart-style seek bar and themed controls",
+    "Description": "Media player card and music scrobbler: local listen history, stats and ListenBrainz uploads",
     "Category": "Multimedia",
     "Icon": "media-playback-start",
     "License": "GPL-2.0-or-later",
-    "Version": "1.1.0",
+    "Version": "2.0.0",
     "Authors": [{ "Name": "Sarwar Uddin" }]
   },
   "KPackageStructure": "Plasma/Applet",

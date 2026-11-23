@@ -15,4 +15,26 @@
       <max>25</max>
     </entry>
   </group>
+  <group name="Scrobbling">
+    <entry name="listenBrainz" type="Bool">
+      <label>Upload listens to ListenBrainz</label>
+      <default>false</default>
+    </entry>
+    <entry name="listenBrainzToken" type="String">
+      <label>ListenBrainz user token</label>
+      <default></default>
+    </entry>
+    <entry name="listenBrainzApi" type="String">
+      <label>ListenBrainz API base URL</label>
+      <default>https://api.listenbrainz.org</default>
+    </entry>
+    <entry name="localOnlyPlayers" type="String">
+      <label>Players whose listens are kept locally but not uploaded (comma separated)</label>
+      <default>strawberry</default>
+    </entry>
+    <entry name="ignoredPlayers" type="String">
+      <label>Players that are never recorded (comma separated)</label>
+      <default></default>
+    </entry>
+  </group>
 </kcfg>

@@ -31,6 +31,30 @@ PlasmoidItem {
     }
     Component.onCompleted: refreshRows()
 
+    Scrobbler {
+        id: scrobbler
+        player: root.player
+        listenBrainz: Plasmoid.configuration.listenBrainz
+        token: Plasmoid.configuration.listenBrainzToken.trim()
+        apiBase: Plasmoid.configuration.listenBrainzApi
+        localOnlyPlayers: Plasmoid.configuration.localOnlyPlayers
+        ignoredPlayers: Plasmoid.configuration.ignoredPlayers
+    }
+    property int page: 0    // 0 = now, 1 = history, 2 = stats
+
+    function scrobbleText() {
+        if (!scrobbler.eligible) return ""
+        if (scrobbler.scrobbled)
+            return scrobbler.uploads ? i18n("Scrobbled") : i18n("Saved to history")
+        return i18n("Counts as a listen in %1", fmtTime((scrobbler.need - scrobbler.played) * 1e6))
+    }
+    function serviceText() {
+        if (!Plasmoid.configuration.listenBrainz || scrobbler.token === "") return i18n("Local history")
+        if (scrobbler.lastError === "invalid token") return i18n("ListenBrainz: token not valid")
+        if (scrobbler.pending > 0) return i18np("ListenBrainz · %1 queued", "ListenBrainz · %1 queued", scrobbler.pending)
+        return i18n("ListenBrainz")
+    }
+
     readonly property color crimson: "#E0203F"
     readonly property color dim: "#9A9AA2"
 
@@ -59,7 +83,7 @@ PlasmoidItem {
     switchHeight: Kirigami.Units.gridUnit * 7
 
     toolTipMainText: hasPlayer && track ? track : i18n("Nothing playing")
-    toolTipSubText: hasPlayer ? [artist, player.identity].filter(Boolean).join(" — ") : ""
+    toolTipSubText: hasPlayer ? [[artist, player.identity].filter(Boolean).join(" — "), scrobbleText()].filter(Boolean).join("\n") : ""
 
     // Panel view: mini album art + "track · artist". Left click opens the card,
     // middle click toggles play/pause, wheel changes volume.
@@ -118,6 +142,17 @@ PlasmoidItem {
                     active: compact.containsMouse
                     opacity: root.hasPlayer ? 1 : 0.6
                 }
+                // progress towards counting as a listen; solid once it has
+                Rectangle {
+                    anchors.left: parent.left; anchors.bottom: parent.bottom
+                    anchors.margins: 1
+                    height: 2
+                    visible: scrobbler.eligible
+                    width: (parent.width - 2) * scrobbler.progress
+                    color: root.crimson
+                    opacity: scrobbler.scrobbled ? 1 : 0.75
+                    z: 2
+                }
                 // paused overlay on top of real art
                 Rectangle {
                     anchors.fill: parent
@@ -164,7 +199,7 @@ PlasmoidItem {
         Layout.minimumWidth: Kirigami.Units.gridUnit * 22
         Layout.minimumHeight: Kirigami.Units.gridUnit * 8
         Layout.preferredWidth: 620
-        Layout.preferredHeight: 170
+        Layout.preferredHeight: 214
         clip: true
 
         // ---- blurred album art backdrop ----------------------------------
@@ -200,14 +235,74 @@ PlasmoidItem {
             }
         }
 
-        RowLayout {
+        ColumnLayout {
             anchors.fill: parent
             anchors.margins: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.smallSpacing
+
+        // ---- tabs + service status + player chip -----------------------------
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 0
+            Repeater {
+                model: [i18n("Now Playing"), i18n("History"), i18n("Stats")]
+                delegate: PC3.ToolButton {
+                    required property int index
+                    required property string modelData
+                    text: modelData
+                    font: Kirigami.Theme.smallFont
+                    flat: true
+                    checkable: true
+                    checked: root.page === index
+                    opacity: checked ? 1 : 0.6
+                    onClicked: root.page = index
+                    Rectangle {
+                        anchors.bottom: parent.bottom
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        width: parent.width - Kirigami.Units.largeSpacing
+                        height: 2
+                        color: root.crimson
+                        visible: parent.checked
+                    }
+                }
+            }
+            Item { Layout.fillWidth: true }
+            PC3.Label {
+                text: root.serviceText()
+                color: scrobbler.lastError === "invalid token" ? root.crimson : root.dim
+                font: Kirigami.Theme.smallFont
+                Layout.rightMargin: Kirigami.Units.smallSpacing
+                HoverHandler { id: svcHover }
+                PC3.ToolTip.visible: svcHover.hovered && scrobbler.lastError !== ""
+                PC3.ToolTip.text: i18n("Last upload failed: %1. Listens stay queued and are retried.", scrobbler.lastError)
+            }
+            // player chip: click to cycle through players
+            PC3.ToolButton {
+                visible: root.hasPlayer
+                flat: true
+                icon.name: root.hasPlayer ? (root.player.iconName || "multimedia-player") : ""
+                text: root.hasPlayer ? root.player.identity : ""
+                font: Kirigami.Theme.smallFont
+                enabled: root.playerCount > 1
+                onClicked: root.nextPlayer()
+                PC3.ToolTip.text: i18n("Switch player")
+                PC3.ToolTip.visible: hovered && enabled
+            }
+        }
+
+        StackLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            currentIndex: root.page
+
+        RowLayout {
             spacing: Kirigami.Units.largeSpacing
 
             // ---- album art ------------------------------------------------
             Rectangle {
                 Layout.fillHeight: true
+                Layout.maximumHeight: 170
+                Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: height
                 Layout.maximumWidth: 170
                 radius: 4
@@ -240,28 +335,6 @@ PlasmoidItem {
                 Layout.fillHeight: true
                 spacing: 2
 
-                RowLayout {
-                    Layout.fillWidth: true
-                    PC3.Label {
-                        text: i18n("Now Playing")
-                        opacity: 0.6
-                        font: Kirigami.Theme.smallFont
-                    }
-                    Item { Layout.fillWidth: true }
-                    // player chip: click to cycle through players
-                    PC3.ToolButton {
-                        visible: root.hasPlayer
-                        flat: true
-                        icon.name: root.hasPlayer ? (root.player.iconName || "multimedia-player") : ""
-                        text: root.hasPlayer ? root.player.identity : ""
-                        font: Kirigami.Theme.smallFont
-                        enabled: root.playerCount > 1
-                        onClicked: root.nextPlayer()
-                        PC3.ToolTip.text: i18n("Switch player")
-                        PC3.ToolTip.visible: hovered && enabled
-                    }
-                }
-
                 PC3.Label {
                     Layout.fillWidth: true
                     text: root.hasPlayer ? (root.track || i18n("Unknown track")) : i18n("Nothing playing")
@@ -277,6 +350,14 @@ PlasmoidItem {
                     color: root.dim
                     elide: Text.ElideRight
                     maximumLineCount: 1
+                }
+                PC3.Label {
+                    Layout.fillWidth: true
+                    visible: text.length > 0
+                    text: scrobbler.ignored ? i18n("Not recorded (ignored player)") : root.scrobbleText()
+                    color: scrobbler.scrobbled ? root.crimson : root.dim
+                    font: Kirigami.Theme.smallFont
+                    opacity: 0.85
                 }
 
                 Item { Layout.fillHeight: true }
@@ -365,6 +446,21 @@ PlasmoidItem {
                     }
                 }
             }
+        }
+
+        HistoryPage {
+            scrobbler: scrobbler
+            active: root.expanded && root.page === 1 || Plasmoid.formFactor === PlasmaCore.Types.Planar && root.page === 1
+            crimson: root.crimson
+            dim: root.dim
+        }
+        StatsPage {
+            scrobbler: scrobbler
+            active: root.expanded && root.page === 2 || Plasmoid.formFactor === PlasmaCore.Types.Planar && root.page === 2
+            crimson: root.crimson
+            dim: root.dim
+        }
+        }
         }
     }
 }
